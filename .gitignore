@@ -1,1 +1,11 @@
-backend/.venv
+# Python
+backend/.venv/
+backend/.env
+backend/**/__pycache__/
+backend/*.db
+.pytest_cache/
+
+# Node
+frontend/node_modules/
+frontend/.next/
+frontend/.env*.local

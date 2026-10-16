@@ -54,3 +54,11 @@
 ## 6. Giả định về Quản lý tồn kho
 - Ngưỡng cảnh báo tồn kho thấp mặc định: **5 sản phẩm / biến thể (size, màu)**.
 - Cơ chế giữ chỗ tồn kho cho đơn hàng MoMo: Giữ chỗ tối đa **15 phút**. Nếu sau 15 phút khách hàng chưa hoàn tất thanh toán, hệ thống tự động hoàn lại số lượng tồn kho và hủy phiên thanh toán.
+
+---
+
+## 7. Giả định về Phân quyền Quản trị (RBAC) & Nhật ký Hoạt động (F22, F23)
+- **Vai trò Quản trị viên (`admin`)**: Có toàn quyền trên hệ thống, bao gồm truy cập báo cáo doanh thu, xuất dữ liệu tài chính dạng CSV, duyệt võ đường, hoàn tiền thủ công, phân quyền tài khoản và tra cứu toàn bộ nhật ký kiểm toán hệ thống.
+- **Vai trò Nhân viên vận hành (`staff`)**: Chỉ được phép thao tác các nghiệp vụ đóng gói hàng, điều chỉnh kho kiểm kê, cập nhật trạng thái giao nhận và duyệt nhận hàng đổi size; **bắt buộc bị chặn (403 Forbidden) khi truy cập báo cáo doanh thu tài chính và nhật ký hoạt động hệ thống**.
+- **Nhật ký kiểm toán (`activity_logs`)**: Tự động lưu trữ bất biến các hành động quan trọng gồm: `ADMIN_LOGIN`, `CHANGE_ORDER_STATUS`, `UPDATE_PRODUCT_PRICE`, `ADJUST_INVENTORY`, `REFUND_ORDER`, `APPROVE_RETURN`, `RECEIVE_RETURN`, `APPROVE_DOJO`, `CHANGE_USER_ROLE`.
+

@@ -111,9 +111,45 @@ Theo đề bài: nộp **source code + báo cáo `.docx` + trình chiếu**, đ�
 - [ ] Triển khai online và kiểm tra backup/restore
 - [ ] Hoàn thiện báo cáo, slide và gói nộp bài
 
-## 11. Tài liệu cơ sở
+## 11. Hướng dẫn Tích hợp & Kiểm thử MoMo (Mục 7)
+
+### 11.1. Chế độ giả lập (MOMO_MOCK=True)
+Hệ thống mặc định kích hoạt `MOMO_MOCK=True` trong file `.env`. Ở chế độ này:
+- Cho phép chạy demo, đặt hàng và kiểm thử tự động toàn bộ luồng thanh toán mà không cần đăng ký tài khoản nhà phát triển MoMo hay cài đặt domain công khai.
+- Khi nhấn thanh toán, hệ thống tự động sinh URL giả lập và có endpoint `POST /api/v1/payments/momo/mock-callback` để mô phỏng kết quả IPN thành công hoặc thất bại.
+
+### 11.2. Chế độ kiểm thử MoMo thật qua Webhook IPN (Ngrok / Cloudflared)
+Để MoMo Gateway môi trường thử nghiệm (Testnet) gọi được thông báo IPN về máy cá nhân:
+1. **Khởi chạy Backend FastAPI:**
+   ```bash
+   uvicorn app.main:app --host 0.0.0.0 --port 8000
+   ```
+2. **Tạo đường hầm công khai bằng Ngrok hoặc Cloudflared:**
+   - **Cách 1: Sử dụng Ngrok:**
+     ```bash
+     ngrok http 8000
+     ```
+     *(Lấy URL HTTPS được cấp, ví dụ: `https://a1b2-c3d4.ngrok-free.app`)*
+   - **Cách 2: Sử dụng Cloudflared:**
+     ```bash
+     cloudflared tunnel --url http://localhost:8000
+     ```
+3. **Cập nhật biến môi trường trong `.env`:**
+   ```env
+   MOMO_MOCK=False
+   MOMO_IPN_URL="https://a1b2-c3d4.ngrok-free.app/api/v1/payments/momo/ipn"
+   MOMO_REDIRECT_URL="http://localhost:3000/orders/payment-result"
+   ```
+4. **Kiểm thử thanh toán:**
+   - Sử dụng ứng dụng MoMo Developer Testnet trên điện thoại quét mã QR.
+   - MoMo sẽ tự động gửi webhook IPN về endpoint máy cá nhân qua đường hầm.
+   - Hệ thống xác minh chữ ký số HMAC-SHA256, đối soát số tiền và cập nhật trạng thái đơn hàng sang `paid`.
+
+---
+
+## 12. Tài liệu cơ sở
 
 - `Nhóm 2 -Elearning.docx` – kế hoạch kinh doanh của nhóm.
-- `ĐỀ BÀI TẬP LỚN.pdf` – yêu cầu môn học.
+- `Prompt-dac-ta-AI-agent-vo-phuc.pdf` – đặc tả hệ thống của đề tài.
+- `docs/` – tài liệu kỹ thuật chi tiết theo Mục 12 của đề bài.
 
-*Tài liệu này phải được cập nhật theo tiến độ phát triển thực tế; không đánh dấu hoàn thành cho những chức năng chưa được kiểm chứng.*

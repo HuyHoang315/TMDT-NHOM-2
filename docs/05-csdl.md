@@ -132,21 +132,58 @@ Lưu trữ danh mục sản phẩm võ phục, đai, dụng cụ bảo hộ và 
 | `thumbnail` | String | URL | Ảnh đại diện sản phẩm |
 | `material` | String | Not null | Chất liệu vải (ví dụ: Kaki Cotton 100%) |
 | `is_customizable` | Boolean | Default False| Hỗ trợ dịch vụ thêu tên riêng |
-| `variants` | Array[Object] | Biến thể | Danh sách các biến thể SKU, size, màu sắc, tồn kho |
+| `variants` | Array[Object] | Biến thể | Danh sách các biến thể SKU, size, màu sắc, tồn kho (`stock`), ngưỡng cảnh báo (`low_stock_threshold`) |
+
+### 2.3. Collection `stock_movements` (Lịch sử Biến động Kho - F17)
+Lưu trữ toàn bộ dấu vết biến động số lượng xuất - nhập - hoàn tồn kho theo từng SKU biến thể:
+
+| Trường | Kiểu dữ liệu | Ràng buộc | Ý nghĩa / Ghi chú |
+|---|---|---|---|
+| `id` | String | Unique Index | Mã giao dịch biến động (UUID) |
+| `product_id` | String | Index | Mã sản phẩm liên quan |
+| `sku` | String | Index | Mã SKU biến thể kích cỡ / màu sắc |
+| `quantity_change` | Integer | != 0 | Số lượng thay đổi (Âm `-` khi bán ra, Dương `+` khi nhập kho/hoàn đơn) |
+| `reason` | String | Not null | Lý do biến động (Bán hàng, Khách hủy đơn, Nhập kho mới, Hoàn hàng đổi size) |
+| `performed_by` | String | Not null | Người thực hiện (Mã khách hàng, Staff ID hoặc Hệ thống) |
+| `created_at` | DateTime | Index | Thời điểm ghi nhận biến động kho |
 
 ---
 
-## 3. Các Ràng buộc Toàn vẹn Dữ liệu trên MongoDB Atlas
+## 3. Các Ràng buộc Toàn vẹn & Cơ chế Cộng Trừ Tồn Kho trên MongoDB Atlas
 
-1. **Ràng buộc Tồn kho không âm**:
-   - Mọi thao tác trừ tồn kho khi tạo đơn đặt hàng sử dụng toán tử nguyên tử (Atomic Update) của MongoDB:
+1. **Cơ chế Bán ra (Trừ tồn kho nguyên tử - Atomic Deduction)**:
+   - Khi khách đặt hàng thành công (đơn COD) hoặc MoMo gửi webhook IPN thanh toán:
+   - Sử dụng toán tử điều kiện nguyên tử của MongoDB để kiểm tra và trừ tồn kho trong cùng 1 transaction:
      ```python
      result = await db["products"].update_one(
-         {"id": product_id, "variants.sku": sku, "variants.stock": {"$gte": quantity}},
-         {"$inc": {"variants.$.stock": -quantity}}
+         {
+             "id": product_id,
+             "variants.sku": sku,
+             "variants.stock": {"$gte": quantity}  # ĐIỀU KIỆN: Tồn kho phải lớn hơn hoặc bằng số lượng mua
+         },
+         {"$inc": {"variants.$.stock": -quantity}}  # TRỪ NGUYÊN TỬ TỨC THÌ
      )
      ```
-   - Nếu `result.modified_count == 0`, giao dịch bị từ chối do không đủ tồn kho, triệt tiêu 100% nguy cơ bán vượt tồn kho (Race condition).
+   - Nếu `result.modified_count == 0`: Hệ thống lập tức ném lỗi `400 Bad Request` thông báo không đủ hàng và hủy giao dịch, **triệt tiêu 100% rủi ro bán vượt tồn kho (oversell)**.
+   - Đồng thời tự động ghi 1 bản ghi vào collection `stock_movements` với `quantity_change = -quantity`.
+
+2. **Cơ chế Hủy đơn & Đổi trả (Cộng hoàn tồn kho - Restock)**:
+   - Khi đơn hàng bị hủy trước lúc vận chuyển (`/orders/{order_code}/cancel`):
+     ```python
+     await db["products"].update_one(
+         {"id": product_id, "variants.sku": sku},
+         {"$inc": {"variants.$.stock": quantity}}  # CỘNG TRẢ LẠI KHO
+     )
+     ```
+   - Khi nhân viên kho xác nhận nhận lại kiện hàng đổi size (`/admin/returns/{id}/receive`):
+     Tồn kho SKU của size cũ tự động được cộng thêm 1 đơn vị (`$inc: {"variants.$.stock": 1}`).
+   - Ghi nhận `stock_movements` với `quantity_change = +quantity`.
+
+3. **Cơ chế Nhập kho / Kiểm kê kho thủ công (F17)**:
+   - Nhân viên kho sử dụng API `/orders/inventory/adjust`:
+     - Nhập hàng mới: truyền `quantity_change > 0` -> tồn kho tăng.
+     - Xuất kho / loại bỏ hàng lỗi: truyền `quantity_change < 0` kèm ràng buộc `variants.stock >= abs(quantity_change)` để tồn kho không bao giờ bị âm.
+   - Ghi nhận đầy đủ nhật ký biến động kho và Activity Log.
 2. **Ràng buộc Duy nhất (Unique Indexes)**:
    - `users.phone`: Không cho phép trùng số điện thoại.
    - `products.slug`: Mỗi sản phẩm có slug SEO duy nhất.

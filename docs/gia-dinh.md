@@ -62,3 +62,13 @@
 - **Vai trò Nhân viên vận hành (`staff`)**: Chỉ được phép thao tác các nghiệp vụ đóng gói hàng, điều chỉnh kho kiểm kê, cập nhật trạng thái giao nhận và duyệt nhận hàng đổi size; **bắt buộc bị chặn (403 Forbidden) khi truy cập báo cáo doanh thu tài chính và nhật ký hoạt động hệ thống**.
 - **Nhật ký kiểm toán (`activity_logs`)**: Tự động lưu trữ bất biến các hành động quan trọng gồm: `ADMIN_LOGIN`, `CHANGE_ORDER_STATUS`, `UPDATE_PRODUCT_PRICE`, `ADJUST_INVENTORY`, `REFUND_ORDER`, `APPROVE_RETURN`, `RECEIVE_RETURN`, `APPROVE_DOJO`, `CHANGE_USER_ROLE`.
 
+---
+
+## 8. Giả định về An toàn Thông tin & Tối ưu hóa Tìm kiếm (Mục 9 & F24)
+- **Bảo vệ tiêu đề phản hồi (Security Headers OWASP)**: Toàn bộ phản hồi HTTP tự động được đính kèm các trường tiêu đề bảo mật: `X-Content-Type-Options: nosniff`, `X-Frame-Options: DENY`, `X-XSS-Protection: 1; mode=block`, `Strict-Transport-Security` (HSTS), `Content-Security-Policy` (CSP), `Referrer-Policy: strict-origin-when-cross-origin`.
+- **Giới hạn tần suất yêu cầu (Rate Limiting)**: Áp dụng thuật toán trượt thời gian 60 giây (Sliding Window): tối đa 120 yêu cầu/phút cho các API công khai; tối đa 15 yêu cầu/phút cho các endpoint xác thực nhạy cảm (`/auth/login`, `/auth/register`, `/auth/forgot-password`). Khi vượt ngưỡng, hệ thống từ chối với mã HTTP 429 và thông báo thời gian chờ qua tiêu đề `Retry-After: 60`.
+- **Làm sạch dữ liệu đầu vào (Input Sanitization)**: Khử thẻ script, thuộc tính sự kiện nguy hiểm (onerror, onload), liên kết pseudo-protocol (`javascript:`) để chống XSS; loại bỏ ký tự toán tử MongoDB (`$where`, `$gt`...) để chống NoSQL Injection.
+- **Che giấu dữ liệu nhạy cảm (Data Masking)**: Che phủ tuyệt đối (`***MASKED***`) các trường `password`, `hashed_password`, `secret_key`, `token` trước khi in ra log hoặc truyền qua phản hồi API.
+- **Cấu trúc dữ liệu SEO (Schema.org & OpenGraph)**: Cung cấp đầy đủ sitemap động chuẩn XML Schema tại `/sitemap.xml`, quy tắc thu thập thông tin tại `/robots.txt`, siêu dữ liệu mạng xã hội (OpenGraph, Twitter Card) và dữ liệu có cấu trúc JSON-LD (`Product`, `BreadcrumbList`, `LocalBusiness`).
+
+

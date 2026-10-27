@@ -32,8 +32,8 @@ TMDT-NHOM-2/
 ├── backend/                  # Python FastAPI Backend
 │   ├── app/
 │   │   ├── core/             # Database (MongoDB Atlas), Config, Security, Middleware, Activity Log
-│   │   ├── modules/          # 11 Domain Modules (Auth, Products, Size Advisor, Cart, Orders, 
-│   │   │                     #                     Payments, Dojos, Admin, Reviews, Promotions, SEO)
+│   │   ├── modules/          # 9 Domain Modules (Auth, Products, Size Advisor, Cart, Orders,
+│   │   │                     #                    Payments, Dojos, Shipping, Admin, SEO)
 │   │   └── seed_mongo.py     # Script khởi tạo dữ liệu mẫu phong phú lên MongoDB Atlas
 │   └── tests/                # 7 bộ kiểm thử tự động tương ứng với các giai đoạn (43 tests)
 ├── frontend/                 # Next.js 14 Web Storefront & Back-office UI
@@ -165,7 +165,7 @@ npm run dev
 - **F18**: In phiếu đóng gói (Packing Slip), tự động cảnh báo đơn có thêu tên riêng.
 - **F19**: Quản lý giao dịch MoMo, đối soát mã đơn/số tiền, đánh dấu hoàn tiền thủ công.
 - **F20**: Quản lý đổi trả, phê duyệt, nhận hàng trả về kho tự động hoàn tồn kho (+1).
-- **F21**: Đánh giá & nhận xét sản phẩm kèm ảnh, kiểm tra điều kiện đã từng mua hàng.
+- **F21** *(hoãn triển khai)*: Đánh giá & nhận xét sản phẩm — module sẽ bổ sung ở phiên bản sau.
 - **F22**: Báo cáo doanh thu bán lẻ vs võ đường, theo ngày/tháng, top sản phẩm, xuất CSV UTF-8 BOM (chặn Staff 403).
 - **F23**: Phân quyền RBAC (Admin toàn quyền, Staff giới hạn), nhật ký hoạt động bất biến `activity_logs`.
 - **F24**: Tối ưu hóa SEO (Dynamic `sitemap.xml`, `robots.txt`, Schema.org JSON-LD `Product`, `BreadcrumbList`, `LocalBusiness`).
